@@ -1,0 +1,12 @@
+{
+  "name": "agent-review-local",
+  "description": "GitHub marketplace for the Agent Review Desk plugin.",
+  "owner": { "name": "Hang Yu" },
+  "plugins": [
+    {
+      "name": "agent-review",
+      "source": "./",
+      "description": "Review proposed changes in the Agent Review Desk before applying them."
+    }
+  ]
+}
