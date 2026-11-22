@@ -42,7 +42,7 @@ Ask the agent for a review, for example "Put these changes up for review with th
 ### Build a review page
 
 1. Copy this folder’s `review.html` unchanged to `wait-for-review/<review_id>/` at the project root, or to the folder named by the reviewer. See the bundled [example review data](review-data.js).
-2. Write the proposals, alternatives, and evidence in the adjacent `review-data.js` using the spec in the HTML header. Put any interactive design preview in a `preview/` subfolder and link to it from the approval page’s evidence.
+2. Write the proposals, alternatives, figures, and evidence in the adjacent `review-data.js` using the spec in the HTML header. List an item's charts, screenshots, mockups, or interactive previews in its `visuals`. The card shows them between the proposal and the decision buttons, about 700 px wide, so capture each figure at that width at 2x. Put their files in subfolders such as `visuals/` and `preview/`.
 3. From the project root, run `node "<plugin checkout>/check_review.js" wait-for-review/<review_id>/review-data.js --verify-page`. Open the result at desktop and phone widths and check that each expanded item shows its decision buttons and **Your confidence** choices.
 
 ## What is on the page
@@ -54,10 +54,10 @@ Ask the agent for a review, for example "Put these changes up for review with th
 3. **Category × priority.** Items by category and priority, as a clickable filter.
 4. **Agent run.** The agent's run as a state machine, one dot per item.
 5. **Filters.** Priority, decision, confidence, category, and kind, with bar counts.
-6. **Item.** Impact, agent confidence, and risk under the title, then the proposal or options to choose between.
+6. **Item.** Impact, agent confidence, and risk under the title, then the proposal or options to choose between, then the item's figures, if any.
 7. **Decision.** Accept, Edit, Rework, or Reject.
 8. **Rail.** Evidence links, your confidence, and a note. On phones, **Your confidence** appears immediately above the decision buttons.
-9. **Decided items.** Folded to one line.
+9. **Decided items.** Stay open, with the decision in the header and its button pressed.
 10. **Hand back.** Overall verdict, your confidence, run notes, and the feedback for the agent.
 11. **Evidence.** Each piece marked ✓ holds, ? not sure, or ✕ does not hold.
 12. **Save.** Decisions saved into the page's own folder.

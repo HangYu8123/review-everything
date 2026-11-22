@@ -11,8 +11,11 @@
   AGENT REVIEW DESK - a universal page for reviewing what an agent produced.
   Copy this review.html unchanged next to a review-data.js written to the spec below, and open it.
   Put review content and options in review-data.js so this page provides the review controls.
-  For UI proposals, link any interactive preview from the review data and put the preview in its own
-  subfolder. Verify the approval page with check_review.js <path-to-review-data.js> --verify-page.
+  Charts, screenshots, mockups and interactive previews for an item go on its card, between the proposal
+  or options and the decision buttons: list them in the item's visuals (see ITEM) and put their files in
+  subfolders of the review folder, such as visuals/ or preview/. The page leaves an HTML comment
+  "visuals slot" at that spot on every card without figures.
+  Verify the approval page with check_review.js <path-to-review-data.js> --verify-page.
 
   WHERE TO PUT IT - By default, put each review in its own folder, wait-for-review/<review_id>/, at the
   root of the project you are working in (the folder your session started in). If wait-for-review/ does
@@ -67,9 +70,24 @@
     lang        optional language name for code
     options     optional alternatives to choose between: { id, label, text, why, recommended }.
                 Keys 1-9 pick one. Use only when the choice is real.
+    visuals     optional figures for this item, shown ON THE CARD between the proposal or options and the
+                Accept / Edit / Rework / Reject buttons. A list (or one) of { image | svg | html, caption, alt,
+                height, option }, or a plain path string:
+                image     path relative to this folder, such as "visuals/latency.png", or an http(s) URL
+                svg       inline SVG markup as one JSON string (give the root svg a viewBox)
+                html      path to an interactive page in this folder, such as "preview/index.html", shown in a frame
+                caption   one line: what the reviewer should see in it
+                alt       optional screen-reader text. Default: the caption
+                height    optional height in px (frames default to 360, images are capped at 520)
+                option    optional option id: show the figure only while that option is chosen
+                Charts, screenshots and mockups of the change itself go here. Proof goes in evidence.
+                A figure is about 700 px wide on a laptop screen. Draw or capture each one at that width or less,
+                at 2x pixel density, so its text stays readable. Split a tall screenshot into several figures,
+                or set height to the height it should be shown at.
     evidence    list, shown at the end of the page with a jump link from the item:
                 { id, kind, source, where, text, reason, stance, strength, url, value, unit, image }
                 kind      file | code | test | log | quote | metric | url | image | data | command | doc
+                url       an http(s) URL, or a path relative to this folder such as "preview/outcome.html"
                 source    for paper reviews: claims, method, experiments, baselines, presentation (the paper),
                           prior, field (external), guideline, previous, style (your rules). Sets the kind.
                 stance    for | against | context   (default: for). Include evidence against when it exists.
@@ -92,7 +110,10 @@
     4. Prefer choices. When there are real alternatives, use options. Supply reasons chips that fit the task.
        Ask nothing beyond the item's own decision: no extra yes or no questions.
     5. Prefer numbers to adjectives: evidence values, confidence, impact.
-    6. Describe the run or the argument as a machine of 6-14 states, and link every item to its state.
+    6. Prefer a picture when one shows the change or the choice faster than text: a chart of the numbers
+       behind the options, a screenshot or mockup of a UI change, a plot of a result. Put it in the item's
+       visuals so it sits on the card, right above the decision buttons. Leave visuals out otherwise.
+    7. Describe the run or the argument as a machine of 6-14 states, and link every item to its state.
 
   Older review-data.js files from the paper-review and edit templates also open: revised becomes proposed,
   group or type becomes the category, note becomes why, second becomes option B, states' points link items.
@@ -408,6 +429,17 @@ del { background: var(--del); color: var(--del-ink); border-radius: 3px; padding
 .opt-why { font-size: .8rem; color: var(--ink-2); }
 .badge { font-size: .66rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; padding: 1px 6px; border-radius: 5px; background: transparent; color: var(--sug-ink); border: 1px solid currentColor; }
 
+/* the item's own figures, on the card between the proposal or options and the decision buttons (items[].visuals) */
+.visuals { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr)); gap: 9px; align-items: start; }
+.vis { margin: 0; min-width: 0; display: flex; flex-direction: column; gap: 6px; padding: 8px 8px 7px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+.vis-open { display: block; border-radius: 8px; overflow: hidden; cursor: zoom-in; }
+.vis img { display: block; max-width: 100%; max-height: 520px; height: auto; margin: 0 auto; border-radius: 8px; }
+.vis img.fill { width: 100%; object-fit: contain; }
+.vis iframe { display: block; width: 100%; height: 360px; border: 1px solid var(--line-2); border-radius: 8px; background: var(--surface); }
+.vis figcaption { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; padding: 0 2px; font-size: .84rem; line-height: 1.4; color: var(--ink-2); }
+.vis figcaption .badge { color: var(--ink-2); }
+.vis figcaption a { margin-left: auto; font-size: .8rem; color: var(--ink-2); white-space: nowrap; }
+
 /* evidence jump links on a card */
 .evlinks { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding-top: 10px; border-top: 1px dashed var(--line); }
 .evl-label { font-size: .7rem; text-transform: uppercase; letter-spacing: .13em; color: var(--ink-2); font-weight: 600; margin-right: 4px; }
@@ -472,13 +504,6 @@ textarea { width: 100%; min-height: 64px; border: 1px solid var(--line); border-
 .editor textarea.code { font-family: var(--mono); font-size: .8rem; white-space: pre; }
 .editor-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
-.card.folded { grid-template-columns: 1fr; }
-.fold-row { width: 100%; border: 0; border-radius: 0; background: none; display: flex; align-items: center; gap: 8px; padding: 10px 14px 10px 22px; text-align: left; flex-wrap: wrap; font-weight: 400; }
-.fold-row:hover { background: var(--hover); }
-.fold-row .ft { font-weight: 600; flex: 1 1 200px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.fold-row .status-pill { margin-left: 0; }
-.fold-row .chev { color: var(--ink-3); }
-.fold-extra { display: inline-flex; gap: 5px; flex-wrap: wrap; }
 .empty-list { text-align: center; padding: 40px 16px; color: var(--ink-2); background: var(--surface); border: 1px dashed var(--line); border-radius: 14px; }
 
 /* hand-back */
@@ -527,7 +552,8 @@ textarea { width: 100%; min-height: 64px; border: 1px solid var(--line); border-
 .ev-reason::before { content: "→ "; color: var(--ink-3); }
 .ev-value { margin-top: 4px; font-size: 1.4rem; font-weight: 700; letter-spacing: -.01em; }
 .ev-value small { font-size: .8rem; font-weight: 500; color: var(--ink-2); margin-left: 4px; }
-.ev img { max-width: 100%; max-height: 280px; border-radius: 8px; border: 1px solid var(--line); margin-top: 6px; display: block; }
+.ev-img { display: block; width: fit-content; max-width: 100%; margin-top: 6px; cursor: zoom-in; }
+.ev img { max-width: 100%; max-height: 520px; border-radius: 8px; border: 1px solid var(--line); display: block; }
 .ev-verdict { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
 .vbtns { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; background: var(--surface); }
 .vbtns button { border: 0; border-radius: 0; padding: 4px 11px; font-size: .86rem; background: none; min-width: 32px; }
@@ -585,6 +611,7 @@ body.dragging .shell { outline: 3px dashed var(--accent); outline-offset: -6px; 
   .rail { border-left: 0; border-top: 1px solid var(--line); background: none; }
   .workspace { display: block; }
   .card { grid-template-columns: 1fr; break-inside: avoid; box-shadow: none; }
+  .vis iframe { display: none; }
   .panel, .kpi { box-shadow: none; }
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
@@ -685,7 +712,6 @@ body.dragging .shell { outline: 3px dashed var(--accent); outline-offset: -6px; 
             <button type="button" data-sort="risk" aria-pressed="false" title="Lowest agent confidence first">Least sure</button>
             <button type="button" data-sort="order" aria-pressed="false" title="The order the agent wrote them">Agent order</button>
           </div>
-          <label class="toggle"><input type="checkbox" id="fold-tg" checked> Fold decided</label>
           <label class="toggle"><input type="checkbox" id="advance-tg" checked> Auto-advance</label>
           <button type="button" id="next-btn">Next undecided ↓</button>
           <span class="count" id="count"></span>
@@ -816,7 +842,7 @@ body.dragging .shell { outline: 3px dashed var(--accent); outline-offset: -6px; 
   var savedAt = null;
   var undoStack = [];
   var ui = {
-    q: '', sort: 'rank', group: 'rank', state: null, focus: null, fold: true, advance: true, out: 'md',
+    q: '', sort: 'rank', group: 'rank', state: null, focus: null, advance: true, out: 'md',
     f: { priority: new Set(), status: new Set(), conf: new Set(), category: new Set(), kind: new Set(), tag: new Set() },
     editing: {}, noting: {}, writing: {},
     rule: { prios: new Set([2, 3]), conf: 80, ev: 1, noAgainst: true }, ruleOnly: false,
@@ -1030,7 +1056,7 @@ body.dragging .shell { outline: 3px dashed var(--accent); outline-offset: -6px; 
         reason: str(e.reason || e.why),
         stance: stanceOf(e.stance),
         strength: strengthOf(e.strength),
-        url: /^https?:\/\//i.test(str(e.url)) ? str(e.url) : '',
+        url: safeHref(e.url),
         value: e.value != null ? str(e.value) : '',
         unit: str(e.unit),
         image: str(e.image),
@@ -1063,6 +1089,7 @@ body.dragging .shell { outline: 3px dashed var(--accent); outline-offset: -6px; 
     var def = opts.find(function (o) { return o.recommended; }) || opts[0];
     it.defOption = def ? def.id : null;
     if (def && !it.proposed) it.proposed = def.text;
+    it.visuals = arr(x.visuals != null ? x.visuals : x.visual).map(normVisual).filter(Boolean);
     // A title the data gives is shown on the card. A derived one (the first sentence) is used only where the text is hidden.
     it.titleGiven = !!(x.title || x.label);
     it.proposedGiven = !!givenText;
@@ -1076,8 +1103,36 @@ body.dragging .shell { outline: 3px dashed var(--accent); outline-offset: -6px; 
     it.fp = hash(JSON.stringify([it.proposed, it.original, opts.map(function (o) { return o.text; })]));
     it.hay = [it.id, it.title, it.summary, it.why, it.where, it.proposed, it.category, it.kind, it.tags.join(' '),
       it.evidence.map(function (e) { return e.where + ' ' + e.text + ' ' + e.reason; }).join(' '),
-      opts.map(function (o) { return o.label + ' ' + o.text; }).join(' ')].join(' ').toLowerCase();
+      opts.map(function (o) { return o.label + ' ' + o.text; }).join(' '),
+      it.visuals.map(function (v) { return v.caption; }).join(' ')].join(' ').toLowerCase();
     return it;
+  }
+  // An http(s) URL or a path relative to this page's folder. Other schemes (javascript:, file:, C:\) are dropped.
+  function safeHref(v) {
+    v = str(v).trim();
+    if (/^https?:\/\//i.test(v)) return v;
+    return v && !/^[a-z][a-z0-9+.-]*:/i.test(v) && v.slice(0, 2) !== '//' ? v : '';
+  }
+  // One figure for a card: an image file or URL, inline SVG markup, or an interactive page shown in a frame.
+  function normVisual(v) {
+    if (typeof v === 'string') v = /^\s*(<\?xml[^>]*>\s*)?<svg[\s>]/i.test(v) ? { svg: v } : /\.html?([?#].*)?$/i.test(v) ? { html: v } : { image: v };
+    if (!v || typeof v !== 'object') return null;
+    var out = { caption: str(v.caption || v.title), alt: str(v.alt), height: num(v.height), option: v.option != null ? str(v.option) : '' };
+    if (v.svg) {
+      var svg = String(v.svg);
+      var root = /<svg\b[^>]*>/i.exec(svg);
+      if (root && !/\bxmlns\s*=/.test(root[0])) svg = svg.replace(/<svg\b/i, '<svg xmlns="http://www.w3.org/2000/svg"');
+      out.kind = 'svg';
+      out.src = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
+    } else if (v.html || v.frame) {
+      out.kind = 'html';
+      out.src = safeHref(v.html || v.frame);
+    } else {
+      var img = str(v.image || v.src || v.url).trim();
+      out.kind = 'image';
+      out.src = /^data:image\//i.test(img) ? img : safeHref(img);
+    }
+    return out.src ? out : null;
   }
 
   function normMachine(m, items) {
@@ -1330,12 +1385,11 @@ body.dragging .shell { outline: 3px dashed var(--accent); outline-offset: -6px; 
     ui.focus = id;
     if (prev && prev !== id) {
       var pn = document.getElementById('it-' + prev);
-      if (pn) { if (ui.fold && byId[prev] && statusOf(byId[prev]) !== 'undecided' && !(prev in ui.editing)) renderCard(prev); else pn.classList.remove('focused'); }
+      if (pn) pn.classList.remove('focused');
     }
     var node = document.getElementById('it-' + id);
     if (node) {
-      if (node.classList.contains('folded')) renderCard(id);
-      else node.classList.add('focused');
+      node.classList.add('focused');
       if (scroll) {
         var n = document.getElementById('it-' + id);
         if (n) n.scrollIntoView({ block: 'start', behavior: REDUCED ? 'auto' : 'smooth' });
@@ -1433,28 +1487,13 @@ body.dragging .shell { outline: 3px dashed var(--accent); outline-offset: -6px; 
     var s = get(it.id);
     var editing = it.id in ui.editing;
     var focused = ui.focus === it.id;
-    var folded = ui.fold && st !== 'undecided' && !focused && !editing;
+    // Decided cards stay open, like undecided ones, so every decision stays in view.
     var card = h('article', {
-      class: 'card st-' + st + (focused ? ' focused' : '') + (folded ? ' folded' : ''),
+      class: 'card st-' + st + (focused ? ' focused' : ''),
       id: 'it-' + it.id, 'data-id': it.id, 'aria-label': '#' + it.rank + ' ' + it.title,
       onpointerdown: function () { focusAtDown = ui.focus; },
       onclick: function () { if (ui.focus === focusAtDown && ui.focus !== it.id && document.getElementById('it-' + it.id)) setFocus(it.id, false); },
     });
-    if (folded) {
-      var extra = [];
-      s.reasons.forEach(function (r) { extra.push(h('span', { class: 'chip' }, r)); });
-      if (s.option && s.option !== it.defOption) extra.push(h('span', { class: 'chip' }, 'Option ' + s.option));
-      if (s.override != null) extra.push(h('span', { class: 'chip' }, 'your wording'));
-      if (s.conf) extra.push(h('span', { class: 'chip', 'data-tip': 'Your confidence' }, confGlyph(s.conf, R.confLevels.length), confLabel(s.conf)));
-      if (hasNote(s)) extra.push(h('span', { class: 'chip' }, '✚ note'));
-      card.appendChild(h('button', {
-        class: 'fold-row', type: 'button', 'data-k': 'unfold', 'aria-expanded': 'false',
-        onclick: function () { setFocus(it.id, false); },
-      },
-        h('span', { class: 'rank' }, '#' + it.rank), prioBadge(it.priority), statusPill(st),
-        h('span', { class: 'ft' }, fullTitle(it)), h('span', { class: 'fold-extra' }, extra), h('span', { class: 'chev' }, '▸')));
-      return card;
-    }
     var main = h('div', { class: 'card-main' });
     main.appendChild(h('header', { class: 'card-head' },
       h('span', { class: 'rank', 'data-tip': 'Rank ' + it.rank + ' of ' + R.items.length + ' (priority, then impact)' }, '#' + it.rank),
@@ -1476,6 +1515,9 @@ body.dragging .shell { outline: 3px dashed var(--accent); outline-offset: -6px; 
       main.appendChild(drawOptions(it, s));
     }
     else { var prop = drawProposal(it, s); if (prop) main.appendChild(prop); }
+    // VISUALS SLOT: the item's charts, screenshots and mockups, between its content and the decision buttons.
+    // Agents building a review: do not edit this page. Set the item's visuals in review-data.js (see ITEM above).
+    main.appendChild(drawVisuals(it, s));
     main.appendChild(drawDecide(it, st, s));
 
     card.appendChild(main);
@@ -1544,6 +1586,25 @@ body.dragging .shell { outline: 3px dashed var(--accent); outline-offset: -6px; 
         h('span', { class: 'opt-text' + (it.format === 'code' ? ' code' : '') }, (it.original != null && diffSide(it.original, text, 'new')) || text || '(leave it out)'),
         o.why ? h('span', { class: 'opt-why' }, o.why) : null,
         o.by ? h('span', { class: 'opt-why' }, 'by ' + o.by) : null);
+    }));
+  }
+  // The item's figures (items[].visuals). A figure tied to an option shows only while that option is chosen.
+  // An item without figures leaves an HTML comment in the slot, so the rendered page shows where they go.
+  function drawVisuals(it, s) {
+    var sel = s.option || it.defOption;
+    var shown = it.visuals.filter(function (v) { return !v.option || v.option === sel; });
+    if (!shown.length) return document.createComment(' visuals slot: figures for this item go here. Set items[].visuals in review-data.js. ');
+    return h('div', { class: 'visuals', role: 'group', 'aria-label': 'Figures for this item' }, shown.map(function (v) {
+      var label = v.alt || v.caption || 'Figure for ' + it.title;
+      var body = v.kind === 'html'
+        ? h('iframe', { src: v.src, title: label, loading: 'lazy', style: 'height:' + (v.height || 360) + 'px' })
+        : h('a', { class: 'vis-open', href: v.src, target: '_blank', rel: 'noopener', 'data-tip': 'Open full size' },
+          h('img', { src: v.src, alt: label, loading: 'lazy', class: v.kind === 'svg' ? 'fill' : null, style: v.height ? 'max-height:' + v.height + 'px' : null }));
+      return h('figure', { class: 'vis' }, body,
+        v.caption || v.option || v.kind === 'html' ? h('figcaption', null,
+          v.option ? h('span', { class: 'badge' }, 'Option ' + v.option) : null,
+          v.caption ? h('span', null, v.caption) : null,
+          v.kind === 'html' ? h('a', { href: v.src, target: '_blank', rel: 'noopener' }, 'Open ↗') : null) : null);
     }));
   }
   function drawEditor(it) {
@@ -1616,7 +1677,8 @@ body.dragging .shell { outline: 3px dashed var(--accent); outline-offset: -6px; 
           e.source ? h('span', { class: 'src' }, e.source) : null),
         e.value ? h('div', { class: 'ev-value' }, e.value, e.unit ? h('small', null, e.unit) : null) : null,
         e.text ? (e.code ? h('pre', { class: 'ev-text code' }, e.text) : h('p', { class: 'ev-text' }, e.text)) : null,
-        e.image ? h('img', { src: e.image, alt: e.where || 'Evidence image', loading: 'lazy' }) : null,
+        e.image ? h('a', { class: 'ev-img', href: e.image, target: '_blank', rel: 'noopener', 'data-tip': 'Open full size' },
+          h('img', { src: e.image, alt: e.where || 'Evidence image', loading: 'lazy' })) : null,
         e.reason ? h('p', { class: 'ev-reason' }, e.reason) : null),
       h('div', { class: 'ev-verdict' },
         h('div', { class: 'vbtns', role: 'group', 'aria-label': 'Your verdict on this evidence' },
@@ -1822,7 +1884,7 @@ body.dragging .shell { outline: 3px dashed var(--accent); outline-offset: -6px; 
     var fresh = drawCard(byId[id]);
     old.replaceWith(fresh);
     if (key) {
-      var t = fresh.querySelector('[data-k="' + cssId(key) + '"]') || (key === 'unfold' ? fresh.querySelector('[data-k="dec-accept"]') : null);
+      var t = fresh.querySelector('[data-k="' + cssId(key) + '"]');
       if (t) t.focus({ preventScroll: true });
     }
   }
@@ -3018,7 +3080,6 @@ body.dragging .shell { outline: 3px dashed var(--accent); outline-offset: -6px; 
     });
     bindSegment('sort', renderList);
     bindSegment('group', function () { renderList(); renderOut(); });
-    $('#fold-tg').addEventListener('change', function (e) { ui.fold = e.target.checked; renderList(); });
     $('#advance-tg').addEventListener('change', function (e) { ui.advance = e.target.checked; });
     $('#next-btn').addEventListener('click', function () { advance(ui.focus); });
     $('#clear-filters').addEventListener('click', clearFilters);

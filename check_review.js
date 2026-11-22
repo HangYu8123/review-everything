@@ -90,6 +90,7 @@ function checkItem(it, i) {
   ['impact', 'confidence', 'risk'].forEach((k) => { if (!inUnit(it[k])) err(at + ': ' + k + ' should be a number from 0 to 1.'); });
   if (it.confidence == null) warn(at + ' has no confidence. Bulk rules on confidence will skip it.');
   checkOptions(it, at);
+  checkVisuals(it, at);
   const evidence = list(it.evidence);
   checkEvidence(evidence, at);
   if (evidence.some((e) => e && /against/i.test(String(e.stance || '')))) withAgainst++;
@@ -115,6 +116,44 @@ function checkOptions(it, at) {
   if (opts.filter((o) => o && o.recommended).length > 1) warn(at + ' recommends more than one option.');
 }
 
+// A link the page keeps: an http(s) URL or a path relative to the review folder.
+const isRemote = (v) => /^https?:\/\//i.test(v);
+const isRelative = (v) => !!v && !/^[a-z][a-z0-9+.-]*:/i.test(v) && !v.startsWith('//');
+function checkLocal(target, what, report = err) {
+  if (isRemote(target)) return;
+  if (!isRelative(target)) { report(what + ' "' + target + '" is dropped by the page: use an http(s) URL or a path relative to the review folder.'); return; }
+  let local = target.replace(/[?#].*$/, '');
+  try { local = decodeURI(local); } catch (e) { /* keep it as written */ }
+  if (!fs.existsSync(path.join(path.dirname(file), local))) warn(what + ' "' + target + '" was not found next to review-data.js.');
+}
+
+function checkVisuals(it, at) {
+  const raw = it.visuals != null ? it.visuals : it.visual;
+  if (raw == null) return;
+  const optIds = new Set(list(it.options).map((o, j) => String(o && o.id != null ? o.id : String.fromCharCode(65 + j))));
+  (Array.isArray(raw) ? raw : [raw]).forEach((v, j) => {
+    const vat = at + ' visual #' + (j + 1);
+    if (typeof v === 'string') {
+      if (!/^\s*(<\?xml[^>]*>\s*)?<svg[\s>]/i.test(v)) checkLocal(v.trim(), vat);
+      warn(vat + ' has no caption. Give it as { image, caption } so the reviewer knows what to look at.');
+      return;
+    }
+    if (!isRecord(v)) { err(vat + ' is not an object or a path.'); return; }
+    const sources = ['svg', 'html', 'image'].filter((k) => v[k]);
+    if (!sources.length) err(vat + ' needs one of image, svg or html.');
+    else if (sources.length > 1) warn(vat + ' has ' + sources.join(' and ') + '. Only the ' + sources[0] + ' is shown.');
+    if (v.image && !/^data:image\//i.test(String(v.image))) checkLocal(String(v.image).trim(), vat + ' image');
+    if (v.html) {
+      if (isRemote(String(v.html))) warn(vat + ': many sites refuse to load in a frame. Put the page in this review folder.');
+      else checkLocal(String(v.html).trim(), vat + ' html');
+    }
+    if (v.svg && !/<svg\b[^>]*\bviewBox\s*=/i.test(String(v.svg))) warn(vat + ': the svg has no viewBox, so it may not scale to the card.');
+    if (!v.caption) warn(vat + ' has no caption: one line on what the reviewer should see in it.');
+    if (v.option != null && !optIds.has(String(v.option))) err(vat + ': option "' + v.option + '" is not one of this item\'s option ids.');
+    if (v.height != null && !(typeof v.height === 'number' && v.height > 0)) err(vat + ': height should be a number of pixels.');
+  });
+}
+
 function checkEvidence(ev, at) {
   if (!ev.length) warn(at + ' has no evidence. Put the evidence on the item it supports.');
   const evIds = new Set();
@@ -129,7 +168,8 @@ function checkEvidence(ev, at) {
     if (e.kind && !EV_KINDS.includes(e.kind)) warn(eat + ': kind "' + e.kind + '" is not one of ' + EV_KINDS.join(', ') + '.');
     if (!e.where && !e.url) warn(eat + ' has no where: give a location the reviewer can check.');
     if (!e.text && e.value == null && !e.image && !e.url) warn(eat + ' has no text, value, image or url.');
-    if (e.url && !/^https?:\/\//i.test(e.url)) warn(eat + ': url should start with http:// or https://.');
+    if (e.url) checkLocal(String(e.url).trim(), eat + ' url', warn);
+    if (e.image && isRelative(String(e.image).trim())) checkLocal(String(e.image).trim(), eat + ' image', warn);
   });
 }
 
