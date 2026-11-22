@@ -1,6 +1,6 @@
 {
   "name": "agent-review",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Review proposed changes in the Agent Review Desk before applying them.",
   "author": { "name": "Hang Yu" },
   "skills": "./skills/",
