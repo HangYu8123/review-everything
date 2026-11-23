@@ -844,7 +844,7 @@ body.dragging .shell { outline: 3px dashed var(--accent); outline-offset: -6px; 
   var ui = {
     q: '', sort: 'rank', group: 'rank', state: null, focus: null, advance: true, out: 'md',
     f: { priority: new Set(), status: new Set(), conf: new Set(), category: new Set(), kind: new Set(), tag: new Set() },
-    editing: {}, noting: {}, writing: {},
+    editing: {}, noting: {},
     rule: { prios: new Set([2, 3]), conf: 80, ev: 1, noAgainst: true }, ruleOnly: false,
   };
 
@@ -1351,13 +1351,10 @@ body.dragging .shell { outline: 3px dashed var(--accent); outline-offset: -6px; 
     toast('Your confidence: ' + (s.conf ? confLabel(s.conf) : 'not set'));
   }
   function toggleNote(id) {
-    var s = get(id);
-    var writing = hasNote(s);
-    if (writing) ui.writing[id] = true;
-    else ui.noting[id] = !ui.noting[id];
+    if (!hasNote(get(id))) ui.noting[id] = !ui.noting[id];
     renderCard(id);
     var root = '#it-' + cssId(id) + ' ';
-    var b = writing ? $(root + '[data-k="note-text"]') : $(root + '[data-k="note-pick-0"]');
+    var b = $(root + '[data-k="note-text"]') || $(root + '[data-k="note-open"]');
     if (b) b.focus();
   }
 
@@ -1789,17 +1786,16 @@ body.dragging .shell { outline: 3px dashed var(--accent); outline-offset: -6px; 
     if (!noteOpen) {
       rail.appendChild(h('button', { class: 'note-btn', type: 'button', 'data-k': 'note-open', 'aria-keyshortcuts': 'N', title: 'Note (N)', onclick: function () { toggleNote(it.id); } }, '✚ Add a note'));
     } else {
-      var writing = !!s.comment.trim() || ui.writing[it.id];
       rail.appendChild(h('div', { class: 'rail-sec' },
-        h('div', { class: 'rail-label' }, 'Note', writing ? null : h('button', { class: 'linklike', type: 'button', 'data-k': 'note-write', onclick: function () { ui.writing[it.id] = true; renderCard(it.id); var t = $('#it-' + cssId(it.id) + ' [data-k="note-text"]'); if (t) t.focus(); } }, '+ text')),
+        h('div', { class: 'rail-label' }, 'Note'),
         h('div', { class: 'picks' }, R.reasons.note.map(function (t, j) {
           return h('button', { class: 'pick', type: 'button', 'aria-pressed': String(s.noteTags.indexOf(t) >= 0), 'data-k': 'note-pick-' + j, onclick: function () { toggleNoteTag(it.id, t); } }, t);
         })),
-        writing ? h('textarea', {
+        h('textarea', {
           value: s.comment, placeholder: 'Optional note on this item', 'aria-label': 'Note on ' + it.title, 'data-k': 'note-text',
           oninput: function (e) { mut(it.id).comment = e.target.value; persist(); renderOut(); renderSaveState(); },
           onchange: function () { renderSummary(); },
-        }) : null));
+        })));
     }
 
     if (noteOpen || s.prio) rail.appendChild(h('div', { class: 'rail-sec' },
@@ -3019,7 +3015,7 @@ body.dragging .shell { outline: 3px dashed var(--accent); outline-offset: -6px; 
     R.items.forEach(function (it) { byId[it.id] = it; });
     undoStack = [];
     ui.group = R.layout;
-    ui.state = null; ui.editing = {}; ui.noting = {}; ui.writing = {}; ui.ruleOnly = false;
+    ui.state = null; ui.editing = {}; ui.noting = {}; ui.ruleOnly = false;
     FACETS.forEach(function (k) { ui.f[k].clear(); });
     var dropped = restore();
     var first = sortItems(R.items).find(function (it) { return statusOf(it) === 'undecided'; });
