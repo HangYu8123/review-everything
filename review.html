@@ -205,7 +205,7 @@ button.primary:hover { background: var(--green); border-color: var(--green); }
 button.linklike { border: 0; background: none; padding: 0; color: var(--accent); text-decoration: underline; text-underline-offset: .16em; font-size: .86rem; border-radius: 4px; }
 button.danger { color: var(--i-rejected); }
 .chip { display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 2px 10px; font-size: .78rem; color: var(--ink-2); white-space: nowrap; }
-.chip.mono { font-family: var(--mono); font-size: .74rem; max-width: 30ch; overflow: hidden; text-overflow: ellipsis; border-radius: 6px; }
+.chip.mono { font-family: var(--mono); font-size: .74rem; max-width: 100%; white-space: normal; overflow-wrap: anywhere; border-radius: 6px; }
 button.pick { border-radius: 999px; padding: 4px 12px; font-size: .82rem; background: var(--surface); display: inline-flex; align-items: center; gap: 6px; }
 button.pick[aria-pressed="true"] { background: var(--ink); color: var(--surface); border-color: var(--ink); }
 button.pick kbd { font-size: .66rem; opacity: .65; }
@@ -300,7 +300,7 @@ svg .hit:focus-visible > rect.box { stroke: var(--focus); }
 .mgrid .mh { font-size: .76rem; color: var(--ink-2); text-align: center; padding: 2px 2px 6px; line-height: 1.25; align-self: end; display: flex; flex-direction: column; align-items: center; gap: 1px; }
 .mgrid .mh-top { display: inline-flex; align-items: center; gap: 5px; color: var(--ink); }
 .mgrid .mh-sub { color: var(--ink-2); font-size: .72rem; }
-.mgrid .mr { font-size: .86rem; padding-right: 8px; align-self: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mgrid .mr { font-size: .86rem; padding-right: 8px; align-self: center; overflow-wrap: anywhere; line-height: 1.25; }
 .mgrid .mr-total { color: var(--ink-2); font-size: .76rem; text-align: right; }
 .mgrid .mt { font-size: .78rem; color: var(--ink-2); display: flex; align-items: center; justify-content: center; }
 .mcell { border: 0; background: var(--surface-2); border-radius: 10px; padding: 0; height: 46px; display: flex; align-items: center; justify-content: center; }
@@ -324,7 +324,7 @@ svg .hit:focus-visible > rect.box { stroke: var(--focus); }
 .frow { width: 100%; border: 0; background: none; border-radius: 8px; padding: 3px 6px; display: grid; grid-template-columns: 16px minmax(0, 1fr) 54px 26px; gap: 7px; align-items: center; text-align: left; font-size: .84rem; font-weight: 400; }
 .frow:hover { background: var(--hover); }
 .frow[aria-pressed="true"] { background: var(--surface-2); font-weight: 600; }
-.frow .fl { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.frow .fl { overflow-wrap: anywhere; line-height: 1.3; }
 .frow .fbar { height: 6px; background: var(--track); border-radius: 3px; position: relative; }
 .frow .fbar i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 3px; background: var(--ink-2); }
 .frow .fbar b { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 3px; background: var(--axis); opacity: .5; }
@@ -1652,7 +1652,7 @@ body.dragging .shell { outline: 3px dashed var(--accent); outline-offset: -6px; 
         'aria-label': 'Evidence ' + (j + 1) + ': ' + (e.where || e.kind) + ', ' + stanceWord(e),
         onclick: function (ev) { ev.preventDefault(); jumpTo(evAnchor(it, j)); },
       },
-        dab(''), h('span', { class: 'ek' }, EV_KIND[e.kind] || '•'), 'E' + (j + 1),
+        dab(''), h('span', { class: 'ek' }, EV_KIND[e.kind] || '•'), String(j + 1),
         v === 'disagree' ? ' ✕' : v === 'agree' ? ' ✓' : v === 'unsure' ? ' ?' : '',
         h('span', { class: 'arr' }, '↓')));
     });
@@ -1664,7 +1664,7 @@ body.dragging .shell { outline: 3px dashed var(--accent); outline-offset: -6px; 
     var v = s.logic[e.id] || {};
     var where = e.where || e.url;
     var row = h('div', { class: 'ev ' + e.stance, id: evAnchor(it, j) },
-      h('div', { class: 'ev-num' }, h('span', { class: 'ev-kind', 'data-tip': e.kind + (e.source ? ' · ' + e.source : '') }, EV_KIND[e.kind] || '•'), 'E' + (j + 1)),
+      h('div', { class: 'ev-num' }, h('span', { class: 'ev-kind', 'data-tip': e.kind + (e.source ? ' · ' + e.source : '') }, EV_KIND[e.kind] || '•'), String(j + 1)),
       h('div', { style: 'min-width:0' },
         h('div', { class: 'ev-top' },
           where ? (e.url ? h('a', { class: 'ev-where', href: e.url, target: '_blank', rel: 'noopener' }, where + ' ↗') : h('span', { class: 'ev-where' }, where)) : null,
@@ -2111,15 +2111,31 @@ body.dragging .shell { outline: 3px dashed var(--accent); outline-offset: -6px; 
 
   // ---------------------------------------------------------------- the machine
   var MW = 156, MH = 66, GX = 66, GY = 18, TGX = 26, TGY = 50;
+  // A label is never cut: it wraps, and every node of the machine is as tall as the longest label needs.
+  var LABEL_CH = 21, SUB_CH = 27, LABEL_LH = 15, SUB_LH = 12;
   function wrapLabel(s, max) {
     var lines = [''];
     str(s).split(/\s+/).forEach(function (w) {
+      for (; w.length > max; w = w.slice(max)) {  // a word longer than a line, such as a path, is broken
+        if (lines[lines.length - 1]) lines.push('');
+        lines[lines.length - 1] = w.slice(0, max);
+        lines.push('');
+      }
       var cur = lines[lines.length - 1];
+      if (!w) return;
       if (!cur) lines[lines.length - 1] = w;
       else if ((cur + ' ' + w).length <= max) lines[lines.length - 1] = cur + ' ' + w;
       else lines.push(w);
     });
-    return lines.length > 2 ? [lines[0], clip(lines.slice(1).join(' '), max)] : lines;
+    return lines.filter(function (ln, i) { return ln || i === 0; });
+  }
+  function nodeHeight(m) {
+    var label = 1, sub = 0;
+    m.states.forEach(function (s) {
+      label = Math.max(label, wrapLabel(s.label, LABEL_CH).length);
+      if (s.sub) sub = Math.max(sub, wrapLabel(s.sub, SUB_CH).length);
+    });
+    return 66 + (label - 1) * LABEL_LH + Math.max(0, sub - 1) * SUB_LH;
   }
   function edgeLabel(x, y, text, weak) {
     var lines = wrapLabel(text, 13);
@@ -2130,6 +2146,7 @@ body.dragging .shell { outline: 3px dashed var(--accent); outline-offset: -6px; 
   // Layered layout: ranks by longest path, placeholder slots for edges that skip layers,
   // barycenter ordering, and loops back routed round the nearer side of the graph.
   function layoutMachine(m, LR) {
+    MH = nodeHeight(m);
     var S2 = m.states, n = S2.length, pos = {};
     S2.forEach(function (s, i) { pos[s.id] = i; });
     var edges = m.transitions.map(function (t) { return { t: t, u: pos[t.from], v: pos[t.to], back: false, self: t.from === t.to }; });
@@ -2207,7 +2224,7 @@ body.dragging .shell { outline: 3px dashed var(--accent); outline-offset: -6px; 
     var top = PAD + Math.max(selfPad, LR ? room(nA) : 0), left = PAD;
     xy.forEach(function (p) { p.x += left; p.y += top; });
     return {
-      xy: xy, edges: edges, LR: LR, top: top, left: left, spanW: spanW, spanH: spanH,
+      xy: xy, edges: edges, LR: LR, top: top, left: left, spanW: spanW, spanH: spanH, MH: MH,
       W: left + spanW + PAD + (LR ? 0 : room(nB)), H: top + spanH + PAD + (LR ? room(nB) : 0),
     };
   }
@@ -2222,6 +2239,7 @@ body.dragging .shell { outline: 3px dashed var(--accent); outline-offset: -6px; 
     var want = m.layout !== 'auto' ? m.layout : (panel.clientWidth && panel.clientWidth < 760 ? 'TB' : 'LR');
     if (!m._lay || m._lay.mode !== want) { m._lay = layoutMachine(m, want === 'LR'); m._lay.mode = want; }
     var lay = m._lay;
+    MH = lay.MH;
     var svg = $('#machine');
     svg.textContent = '';
     svg.setAttribute('viewBox', '0 0 ' + lay.W + ' ' + lay.H);
@@ -2288,7 +2306,7 @@ body.dragging .shell { outline: 3px dashed var(--accent); outline-offset: -6px; 
       var sel = ui.state === s.id;
       var focusHere = ui.focus && byId[ui.focus] && byId[ui.focus].states.indexOf(s.id) >= 0;
       var tip = s.label + (s.role ? ' · ' + s.role : '') + (s.where ? '\n' + s.where : '') + (s.text ? '\n' + s.text : '') +
-        (linked.length ? '\n\n' + linked.map(function (it) { return ST[statusOf(it)].icon + ' #' + it.rank + ' ' + clip(it.title, 46); }).join('\n') : '');
+        (linked.length ? '\n\n' + linked.map(function (it) { return ST[statusOf(it)].icon + ' #' + it.rank + ' ' + it.title; }).join('\n') : '');
       var g = sv('g', {
         class: 'hit', tabindex: 0, role: 'button', 'data-state': s.id, 'data-tip': tip, 'aria-pressed': String(sel),
         'aria-label': s.label + ', ' + plural(linked.length, 'item') + (linked.length ? ', filter' : ''),
@@ -2304,8 +2322,15 @@ body.dragging .shell { outline: 3px dashed var(--accent); outline-offset: -6px; 
       var tag = (s.kind === 'choice' ? '◇ ' : '') + (s.role || s.kind || '').toUpperCase();
       if (tag) g.appendChild(sv('text', { x: p.x + 12, y: p.y + 15, 'font-size': 8.5, 'font-weight': 600, 'letter-spacing': '.12em', class: 't-muted' }, clip(tag, 20)));
       if (s.novel) g.appendChild(sv('text', { x: p.x + MW - 10, y: p.y + 15, 'font-size': 8.5, 'font-weight': 700, 'letter-spacing': '.1em', 'text-anchor': 'end', style: 'fill:var(--violet)' }, 'NEW'));
-      g.appendChild(sv('text', { x: p.x + 12, y: p.y + 31, 'font-size': 12.5, 'font-weight': 600 }, clip(s.label, 21)));
-      if (s.sub) g.appendChild(sv('text', { x: p.x + 12, y: p.y + 45, 'font-size': 9.5, class: 't-muted' }, clip(s.sub, 27)));
+      var labelLines = wrapLabel(s.label, LABEL_CH);
+      var lab = sv('text', { x: p.x + 12, y: p.y + 31, 'font-size': 12.5, 'font-weight': 600 });
+      labelLines.forEach(function (ln, i) { lab.appendChild(sv('tspan', { x: p.x + 12, dy: i ? LABEL_LH : 0 }, ln)); });
+      g.appendChild(lab);
+      if (s.sub) {
+        var sub = sv('text', { x: p.x + 12, y: p.y + 45 + (labelLines.length - 1) * LABEL_LH, 'font-size': 9.5, class: 't-muted' });
+        wrapLabel(s.sub, SUB_CH).forEach(function (ln, i) { sub.appendChild(sv('tspan', { x: p.x + 12, dy: i ? SUB_LH : 0 }, ln)); });
+        g.appendChild(sub);
+      }
       linked.slice(0, 10).forEach(function (it, j) {
         var st = statusOf(it);
         g.appendChild(sv('circle', {
